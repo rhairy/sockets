@@ -11,7 +11,7 @@
 #include<sys/socket.h> // socket(), connect(), etc
 #include<unistd.h> // read()
 
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 8
 
 int main(int argc, char **argv)
 {
@@ -82,9 +82,14 @@ int main(int argc, char **argv)
      * After a succesful connection establishment, we are going to read whatever
      * the socket sends us into the receive buffer (rxbuf) and print it to the console.
      */
+	int count = 0;
 	while ( (n = read(sockfd, rxbuf, BUFFER_SIZE)) > 0 ) {
-		printf("%s", rxbuf);
+		rxbuf[n] = '\0';
+		printf("%s",rxbuf);
+		count++;
 	}
-	
+
+	printf("Read %i times from socket.\n", count);
+
 	return 0;
 }
