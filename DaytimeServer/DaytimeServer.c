@@ -6,6 +6,7 @@
  */
 // System Libraries
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<time.h>
 
@@ -28,7 +29,10 @@ int main()
 
 	time_t currentTime; // Will store the current calendar time.
 
-	listenfd = socket(AF_INET, SOCK_STREAM, 0);
+	if ( (listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
+		printf("Unable to create socket.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	memset(&servaddr, 0, sizeof(servaddr));
 
@@ -36,30 +40,34 @@ int main()
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(13);
 
-	bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+	if ( (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) ) {
+		printf("Unable to bind socket.\n");
+		exit(EXIT_FAILURE);
+	}
 
-	listen(listenfd, 10);
+	if (listen(listenfd, 10)) {
+		printf("Unable to listen.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	while (1) {
-		connfd = accept(listenfd, (struct sockaddr *) NULL, NULL);
+		struct sockaddr_in cliaddr;
+		socklen_t addrSize = sizeof(cliaddr);
+		connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &addrSize);
 
+		char *clientIP = inet_ntoa(cliaddr.sin_addr);
+
+		printf("New connection from: %s\n", clientIP); 
 		currentTime = time(NULL);
 		struct tm *detailedTime = localtime(&currentTime);
 		strftime(txbuf, BUFFER_SIZE, "%A, %B %d, %Y %H:%M-%Z\r\n", detailedTime);
 		
 		write(connfd, txbuf, BUFFER_SIZE);
+		printf("Wrote %s to %s\n", txbuf, clientIP);
+		printf("Closing connection to %s\n", clientIP);
 
 		memset(txbuf, 0, BUFFER_SIZE);
 		close(connfd);
 	}
-	/**
-	time_t currentTime = time(NULL); // Get the current calendar time.
-
-	struct tm *detailedTime = localtime(&currentTime); // Create a struct tm from the current time.
-
-	strftime(strTime, 64, "%A, %B %d, %Y %H:%M-%Z", detailedTime); // Format the time according to RFC 867 and store it in a string.
-
-	printf("%s", strTime);
-     */	
 	return 0;
 }
