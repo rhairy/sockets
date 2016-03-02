@@ -13,6 +13,7 @@
 // Socket Libraries
 #include<arpa/inet.h>
 #include<sys/socket.h>
+#include<unistd.h>
 
 #define BUFFER_SIZE 64
 #define TIME_SIZE 64
@@ -62,10 +63,12 @@ int main()
 		struct tm *detailedTime = localtime(&currentTime);
 		strftime(txbuf, BUFFER_SIZE, "%A, %B %d, %Y %H:%M-%Z\r\n", detailedTime);
 		
-		write(connfd, txbuf, BUFFER_SIZE);
-		printf("Wrote %s to %s\n", txbuf, clientIP);
-		printf("Closing connection to %s\n", clientIP);
 
+ 		write(connfd, txbuf, BUFFER_SIZE); 
+		printf("Wrote %s to %s\n", txbuf, clientIP);
+		
+
+		printf("Closing connection to %s\n", clientIP);
 		memset(txbuf, 0, BUFFER_SIZE);
 		close(connfd);
 	}
