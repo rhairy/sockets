@@ -7,14 +7,15 @@
 #include<sys/socket.h>
 #include<sys/types.h>
 
-#define BUF_SIZE 32
+#define BUF_SIZE 8
 #define ECHO_PORT 7
 
 int main(int argc, char **argv)
 {
-//	char txbuf[BUF_SIZE];
+	char txbuf[BUF_SIZE];
 	char rxbuf[BUF_SIZE];
 	memset(rxbuf, 0, BUF_SIZE);
+	memset(txbuf, 0, BUF_SIZE);
 
 	int serverfd;
 	if ( (serverfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -43,7 +44,6 @@ int main(int argc, char **argv)
 
 	int clientfd;
 	int clientLen;
-	int count = 0;
 	int r = 0;
 	struct sockaddr_in clientAddr;
 	memset(&clientAddr, 0, sizeof(clientAddr));
@@ -51,12 +51,34 @@ int main(int argc, char **argv)
 
 	while(1) {
 		clientfd = accept(serverfd, (struct sockaddr *) &clientAddr, &clientLen);
-		
-		while ( (r = read(clientfd, rxbuf, BUF_SIZE)) > 0) {
-			printf("Read %i bytes from client.\n", r);
-			count += r;
-		}
 
+		char clientAddrStr[INET_ADDRSTRLEN];
+
+		inet_ntop(AF_INET, &(clientAddr.sin_addr), clientAddrStr, sizeof(clientAddr));
+		
+		printf("Connection from client %s\n", clientAddrStr);
+
+		while ( (r = read(clientfd, rxbuf, BUF_SIZE)) > 0) {
+
+			int i = 0;	
+			while (rxbuf[i] != '\0' && rxbuf[i] != '\n' && i < (BUF_SIZE - 1)) {
+				if (rxbuf[i] >= ' ' && rxbuf[i] <= '~') {
+					txbuf[i] = rxbuf[i];
+					i++;
+				} else {
+					continue;	
+					i++;
+				}
+			}
+			txbuf[i] = '\0';
+
+			write(clientfd, txbuf, BUF_SIZE);
+			printf("Echoed %s to client %s\n", txbuf, clientAddrStr);
+
+			memset(&txbuf, 0, BUF_SIZE);
+			memset(&rxbuf, 0, BUF_SIZE);
+		}
+		printf("Client %s disconnected\n", clientAddrStr);
 	}		
 
 	close(serverfd);
